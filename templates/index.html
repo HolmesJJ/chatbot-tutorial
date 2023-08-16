@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Food AI Bot</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f7f7f7;
+            }
+            .chat-container {
+                display: flex;
+                width: 950px;
+                margin: 50px auto;
+                background-color: #fff;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .chat-history-container {
+                width: 250px;
+                border-right: 1px solid #e1e1e1;
+            }
+            .chat-history-list {
+                height: 480px;
+                padding: 15px;
+                overflow-y: auto;
+                background-color: #333;
+                border-radius: 8px 0px 0px 0px;
+                text-align: center;
+            }
+            .chat-history-item-container {
+                display: flex;
+                margin-bottom: 15px;
+                align-items: center;
+            }
+            .chat-history-item {
+                width: 170px;
+                padding: 10px;
+                background-color: #fff;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .new-chat-container {
+                height: 57px;
+                background-color: #333;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0px 0px 0px 8px;
+            }
+            .new-chat-container button {
+                width: 170px;
+                padding: 8px;
+                font-size: 14px;
+                text-align: center;
+                color: #fff;
+                background-color: transparent;
+                border-radius: 4px;
+                border-style: solid;
+                border-color: #fff;
+                cursor: pointer;
+            }
+            .new-chat-container button:disabled {
+                cursor: not-allowed;
+            }
+            .delete-icon {
+                width: 20px;
+                height: 20px;
+                margin-left: 15px;
+                cursor: pointer;
+            }
+            .chat-content-container {
+                width: 700px;
+                display: flex;
+                flex-direction: column;
+            }
+            .chat-content {
+                height: 500px;
+                overflow-y: auto;
+                padding-top: 10px;
+                border-bottom: 1px solid #e1e1e1;
+            }
+            .chat-input-container {
+                padding: 10px;
+                display: flex;
+            }
+            .chat-input-container input {
+                flex: 1;
+                padding: 10px;
+                border: none;
+                border-radius: 4px;
+            }
+            .chat-input-container button {
+                margin-left: 10px;
+                padding: 10px 15px;
+                background-color: #007bff;
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .chat-input-container button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+            .user-icon {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                margin-left: 20px;
+            }
+            .bot-icon {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                margin-right: 20px;
+            }
+            .message-content {
+                display: flex;
+                align-items: center;
+            }
+            .user-message {
+                background-color: #e1e1e1;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                font-size: 14px;
+                padding: 20px 30px;
+            }
+            .bot-message {
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+                padding: 20px 30px;
+            }
+            .error-text {
+                color: #ff0000;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="chat-container">
+            <div class="chat-history-container">
+                <div class="chat-history-list" id="chatHistoryList"></div>
+                <div class="new-chat-container">
+                    <button id="newChatBtn" onclick="newChat()">New Chat</button>
+                </div>
+            </div>
+            <div class="chat-content-container">
+                <div class="chat-content" id="chatContent">
+                    <div class="bot-message">
+                        <div class="message-content">
+                            <img src="bot_icon.png" alt="Bot Icon" class="bot-icon">
+                            <div>
+                                This is Food AI bot, what can I do for you?
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" autocomplete="off"  placeholder="Type your message...">
+                    <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
+<script type="text/javascript">
+    const chatInput = document.getElementById("chatInput");
+    const newChatBtn = document.getElementById("newChatBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const chatContent = document.getElementById("chatContent");
+    const chatHistoryList = document.getElementById("chatHistoryList");
+
+    chatInput.addEventListener("keydown", function(event) {
+        if (!chatInput.disabled && event.key === "Enter") {
+            sendMessage();
+        }
+    });
+    chatInput.addEventListener("input", function(event) {
+        if (chatInput.value.trim() === "") {
+            sendBtn.disabled = true;
+        } else {
+            sendBtn.disabled = false;
+        }
+    });
+
+    function enableChatInput() {
+        chatInput.disabled = false;
+        newChatBtn.disabled = false;
+    }
+
+    function disableChatInput() {
+        chatInput.value = "";
+        chatInput.disabled = true;
+        newChatBtn.disabled = true;
+        sendBtn.disabled = true;
+    }
+
+    function generateId(length) {
+        const characters = "abcdef0123456789";
+        let result = "";
+        for (let i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return result;
+    }
+
+    const CHAT_ID_LENGTH = 24;
+    const NETWORK_ERROR = "Network error";
+    const dialogues = [];
+    let chatId = generateId(CHAT_ID_LENGTH);
+
+    function newChat() {
+        chatId = generateId(CHAT_ID_LENGTH);
+        dialogues.length = 0;
+        chatContent.innerHTML = "";
+        addBotMessage("This is Food AI bot, what can I do for you?");
+    }
+
+    function addUserMessage(message) {
+        const userMessage = document.createElement("div");
+        userMessage.classList.add("user-message");
+        const messageContent = document.createElement("div");
+        messageContent.classList.add("message-content");
+        const userIcon = document.createElement("img");
+        userIcon.src = "user_icon.png";
+        userIcon.alt = "User Icon";
+        userIcon.classList.add("user-icon");
+        const userText = document.createElement("div");
+        userText.textContent = message;
+        messageContent.appendChild(userText);
+        messageContent.appendChild(userIcon);
+        userMessage.appendChild(messageContent);
+        chatContent.appendChild(userMessage);
+        chatContent.scrollTop = chatContent.scrollHeight;
+    }
+
+    function addBotMessage(message, isError=false) {
+        const botMessage = document.createElement("div");
+        const messageContent = document.createElement("div");
+        messageContent.classList.add("message-content");
+        botMessage.classList.add("bot-message");
+        const botIcon = document.createElement("img");
+        botIcon.src = "bot_icon.png";
+        botIcon.alt = "Bot Icon";
+        botIcon.classList.add("bot-icon");
+        const botText = document.createElement("div");
+        if (isError) {
+            botText.classList.add("error-text");
+        }
+        botText.textContent = message;
+        messageContent.appendChild(botIcon);
+        messageContent.appendChild(botText);
+        botMessage.appendChild(messageContent);
+        chatContent.appendChild(botMessage);
+        chatContent.scrollTop = chatContent.scrollHeight;
+    }
+
+    function getChatById(id) {
+        fetch("/api/chat?chatId=" + id, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }).then(response => response.json()).then(data => {
+            dialogues.length = 0;
+            chatContent.innerHTML = "";
+            if (data["code"] === 1) {
+                chatId = id;
+                dialogues.push(...data["dialogues"]);
+                addBotMessage("This is Food AI bot, what can I do for you?");
+                for (let i = 0; i < data["chats"].length; i++) {
+                    if (data["chats"][i]["role"] === "user") {
+                        addUserMessage(data["chats"][i]["content"]);
+                    } else {
+                        addBotMessage(data["chats"][i]["content"]);
+                    }
+                }
+                chatContent.scrollTop = chatContent.scrollHeight;
+            } else {
+                addBotMessage(NETWORK_ERROR, true);
+                disableChatInput();
+            }
+        }).catch(error => {
+            dialogues.length = 0;
+            chatContent.innerHTML = "";
+            addBotMessage(NETWORK_ERROR, true);
+            disableChatInput();
+        });
+    }
+
+    function deleteChatById(id) {
+        const data = {
+            chatId: id
+        };
+        fetch("/api/chat", {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data)
+        }).then(response => response.json()).then(data => {
+            dialogues.length = 0;
+            chatContent.innerHTML = "";
+            if (data["code"] === 1) {
+                chatId = generateId(CHAT_ID_LENGTH);
+                addBotMessage("This is Food AI bot, what can I do for you?");
+                getChatHistory();
+            } else {
+                addBotMessage(NETWORK_ERROR, true);
+                disableChatInput();
+            }
+        }).catch(error => {
+            dialogues.length = 0;
+            chatContent.innerHTML = "";
+            addBotMessage(NETWORK_ERROR, true);
+            disableChatInput();
+        });
+    }
+
+    function getChatHistory() {
+        fetch("/api/history", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }).then(response => response.json()).then(data => {
+            chatHistoryList.innerHTML = "";
+            if (data["code"] === 1) {
+                chatHistoryList.classList.remove("error-text");
+                for (let i = 0; i < data["titles"].length; i++) {
+                    const chatHistoryItemContainer = document.createElement("div");
+                    chatHistoryItemContainer.classList.add("chat-history-item-container");
+                    const chatHistoryItem = document.createElement("div");
+                    chatHistoryItem.classList.add("chat-history-item");
+                    chatHistoryItem.textContent = data["titles"][i]["title"];
+                    chatHistoryItem.onclick = function() {
+                        getChatById(data["titles"][i]["chatId"]);
+                    };
+                    const deleteIcon = document.createElement("img");
+                    deleteIcon.src = "delete_icon.png";
+                    deleteIcon.alt = "Delete Icon";
+                    deleteIcon.classList.add("delete-icon");
+                    deleteIcon.onclick = function() {
+                        deleteChatById(data["titles"][i]["chatId"]);
+                    };
+                    chatHistoryItemContainer.appendChild(chatHistoryItem);
+                    chatHistoryItemContainer.appendChild(deleteIcon);
+                    chatHistoryList.appendChild(chatHistoryItemContainer);
+                }
+            } else {
+                chatHistoryList.textContent = NETWORK_ERROR;
+                chatHistoryList.classList.add("error-text");
+            }
+        }).catch(error => {
+            chatHistoryList.innerHTML = "";
+            chatHistoryList.textContent = NETWORK_ERROR;
+            chatHistoryList.classList.add("error-text");
+        });
+    }
+
+    function sendMessage() {
+        if (chatInput.value.trim() !== "") {
+            const chatInputContent = chatInput.value.trim();
+            addUserMessage(chatInputContent);
+            disableChatInput();
+
+            const userContent = {
+                role: "user",
+                content: chatInputContent
+            };
+            dialogues.push(userContent);
+            const data = {
+                chatId: chatId,
+                dialogues: dialogues
+            };
+            fetch("/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data)
+            }).then(response => response.json()).then(data => {
+                if (data["code"] === 1) {
+                    if (dialogues.length === 1) {
+                        getChatHistory();
+                    }
+                    const botContent = data["dialogues"][data["dialogues"].length - 1];
+                    dialogues.length = 0;
+                    dialogues.push(...data["dialogues"]);
+                    addBotMessage(botContent["content"]);
+                } else {
+                    dialogues.pop(0);
+                    const message = data["message"];
+                    addBotMessage(message.charAt(0).toUpperCase() + message.slice(1), true);
+                    chatInput.value = chatInputContent;
+                }
+                enableChatInput();
+            }).catch(error => {
+                dialogues.pop(0);
+                addBotMessage(NETWORK_ERROR, true);
+                chatInput.value = chatInputContent;
+                enableChatInput();
+            });
+        }
+    }
+
+    getChatHistory();
+</script>
